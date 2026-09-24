@@ -32,6 +32,7 @@ body {
   background-color: var(--bg-deep);
   color: var(--text-primary);
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -44,14 +45,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(56, 189, 248, 0.5);
 }
 
 /* ==========================================================================
@@ -210,14 +211,19 @@ body {
   display: grid;
   grid-template-columns: 480px 1fr;
   height: calc(100vh - 64px);
+  max-height: calc(100vh - 64px);
+  min-height: 0;
   overflow: hidden;
 }
 
 .panel {
   position: relative;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ==========================================================================
@@ -228,11 +234,16 @@ body {
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .panel-header {
   padding: 16px 20px 12px;
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .mode-toggle-group {
@@ -281,6 +292,7 @@ body {
   overflow-x: auto;
   padding: 12px 20px;
   border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
 
 .chip {
@@ -300,14 +312,31 @@ body {
   color: var(--accent-cyan);
 }
 
-/* Chat Stream */
+/* Chat Stream - Fully Scrollable */
 .chat-stream {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overscroll-behavior: contain;
+}
+
+.chat-stream::-webkit-scrollbar {
+  width: 7px;
+}
+.chat-stream::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+.chat-stream::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+}
+.chat-stream::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
 }
 
 .message {
@@ -356,6 +385,7 @@ body {
   font-size: 0.88rem;
   line-height: 1.6;
   color: #e2e8f0;
+  word-break: break-word;
 }
 
 .user-message .msg-content {
@@ -377,11 +407,13 @@ body {
   margin: 8px 0 8px 18px;
 }
 
-/* Chat Input Bar */
+/* Chat Input Bar - Stays Anchored at Bottom */
 .chat-input-form {
   padding: 16px 20px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 10;
 }
 
 .input-wrapper {
@@ -421,6 +453,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .btn-send:hover {
   transform: scale(1.05);
@@ -433,6 +466,8 @@ body {
   position: relative;
   background: var(--bg-deep);
   overflow: hidden;
+  height: 100%;
+  max-height: 100%;
 }
 
 #graph-container {
@@ -527,6 +562,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .inspector-type {

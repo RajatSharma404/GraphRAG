@@ -1,4 +1,4 @@
-﻿"""
+"""
 GraphRAG End-to-End Pipeline Orchestrator
 Coordinates document chunking, LLM extraction, graph ingestion, community clustering, and dual-mode retrieval.
 """
@@ -77,3 +77,12 @@ class GraphRAGPipeline:
             return self.global_search.search(query)
         else:
             return self.local_search.search(query)
+
+    def ask_stream(self, query: str, mode: str = "local"):
+        """Streaming query entrypoint yielding real-time tokens."""
+        console.print(f"\n[bold magenta]Mode (STREAM): {mode.upper()}[/bold magenta] | Query: [italic]{query}[/italic]\n")
+        if mode == "global":
+            yield from self.global_search.search_stream(query)
+        else:
+            yield from self.local_search.search_stream(query)
+

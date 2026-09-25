@@ -1,4 +1,4 @@
-﻿"""
+"""
 Neo4j Graph Database Client
 Handles connection pooling, query execution, and session management.
 """
@@ -25,7 +25,24 @@ class Neo4jClient:
                 auth=(self.user, self.password),
                 max_connection_lifetime=3600
             )
+            self.init_schema()
         return self._driver
+
+    def init_schema(self) -> None:
+        """Creates uniqueness constraints and indexes for high-speed lookups."""
+        schema_queries = [
+            "CREATE CONSTRAINT entity_name_unique IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE",
+            "CREATE CONSTRAINT chunk_id_unique IF NOT EXISTS FOR (c:Chunk) REQUIRE c.id IS UNIQUE",
+            "CREATE CONSTRAINT comm_summary_id_unique IF NOT EXISTS FOR (cs:CommunitySummary) REQUIRE cs.community_id IS UNIQUE",
+            "CREATE INDEX entity_comm_idx IF NOT EXISTS FOR (e:Entity) ON (e.community_id)"
+        ]
+        try:
+            with self._driver.session() as session:
+                for q in schema_queries:
+                    session.run(q)
+            logger.info("Neo4j schema constraints and indexes verified.")
+        except Exception as e:
+            logger.warning(f"Note on schema initialization: {e}")
 
     def verify_connectivity(self) -> bool:
         """Verifies active connectivity to Neo4j instance."""

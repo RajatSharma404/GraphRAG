@@ -1,4 +1,4 @@
-﻿"""
+"""
 Document Ingestion & Chunking Module
 Splits unstructured text & PDFs into overlapping semantic chunks with deterministic IDs.
 """
@@ -23,7 +23,8 @@ class DocumentChunker:
 
         for page_idx, page in enumerate(reader.pages):
             text = page.extract_text() or ""
-            if not text.strip():
+            text = text.replace("\x00", " ").strip()
+            if not text:
                 continue
             page_chunks = self.split_text(text, doc_name=doc_name, page_number=page_idx + 1)
             chunks.extend(page_chunks)
@@ -33,8 +34,8 @@ class DocumentChunker:
     def load_text(self, file_path: str) -> List[TextChunk]:
         """Reads a plain text or Markdown file and generates chunks."""
         doc_name = os.path.basename(file_path)
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read().replace("\x00", " ")
         return self.split_text(content, doc_name=doc_name, page_number=1)
 
     def split_text(self, text: str, doc_name: str, page_number: int = 1) -> List[TextChunk]:

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Unit Test Suite for Custom GraphRAG Engine
 Validates chunking, schema serialization, entity resolution, and configuration.
 """
@@ -38,3 +38,14 @@ def test_extracted_graph_schema_validation():
     assert len(graph.entities) == 1
     assert len(graph.relationships) == 1
     assert graph.relationships[0].weight == 0.95
+
+def test_local_search_empty_query_stream():
+    from src.retrieval.local_search import LocalSearchEngine
+    class DummyNeo4j:
+        def execute_query(self, q, p=None):
+            return []
+    engine = LocalSearchEngine(DummyNeo4j())
+    tokens = list(engine.search_stream(""))
+    assert len(tokens) == 1
+    assert "valid question" in tokens[0]
+

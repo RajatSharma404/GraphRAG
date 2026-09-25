@@ -1,4 +1,4 @@
-﻿# Core Graph & Database
+# Core Graph & Database
 neo4j>=5.20.0
 networkx>=3.2.1
 python-louvain>=0.16
@@ -22,6 +22,5 @@ fastapi>=0.111.0
 uvicorn[standard]>=0.30.0
 python-multipart>=0.0.9
 
-# CLI & Testing
+# CLI & Formatting
 rich>=13.7.0
-pytest>=8.2.0

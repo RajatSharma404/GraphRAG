@@ -1,0 +1,37 @@
+﻿[
+  {
+    "id": "tc-01",
+    "query": "How does an operational delay at ASML impact Microsoft?",
+    "search_mode": "local",
+    "target_entities": ["ASML", "TSMC", "Nvidia", "Microsoft"],
+    "ground_truth": "ASML supplies High-NA EUV scanners to TSMC. TSMC fabricates chips for Nvidia. Nvidia supplies Blackwell GPUs to Microsoft Azure for OpenAI workloads. Delays at ASML throttle TSMC wafer throughput, which delays Nvidia GPU deliveries, stalling Microsoft Azure data center capacity."
+  },
+  {
+    "id": "tc-02",
+    "query": "What role does SK Hynix play in Nvidia's accelerator architecture?",
+    "search_mode": "local",
+    "target_entities": ["Sk Hynix", "Nvidia"],
+    "ground_truth": "SK Hynix is a South Korean semiconductor supplier that leads in High Bandwidth Memory (HBM3e/HBM4). SK Hynix supplies over 70% of its HBM3e production directly to Nvidia for use in Blackwell B200 and Rubin architectures."
+  },
+  {
+    "id": "tc-03",
+    "query": "How is Google connected to TSMC for custom AI accelerators?",
+    "search_mode": "local",
+    "target_entities": ["Google", "Broadcom", "TSMC"],
+    "ground_truth": "Google partners with Broadcom to co-design custom Application-Specific Integrated Circuits (ASICs) known as Tensor Processing Units (TPUs). Google TPUs are manufactured by TSMC on advanced processes."
+  },
+  {
+    "id": "tc-04",
+    "query": "What are the primary systemic supply chain vulnerabilities identified across the ecosystem?",
+    "search_mode": "global",
+    "target_entities": ["ASML", "TSMC", "Nvidia", "Microsoft", "Google"],
+    "ground_truth": "The primary vulnerabilities include the ASML monopoly on EUV lithography, TSMC's geographic concentration in Taiwan (producing >90% of advanced computing logic), single-point dependencies for high bandwidth memory on SK Hynix, and high energy/grid constraints on cloud hyperscalers."
+  },
+  {
+    "id": "tc-05",
+    "query": "Summarize all major corporate partnerships and strategic alliances in the knowledge graph.",
+    "search_mode": "global",
+    "target_entities": ["Microsoft", "Openai", "Nvidia", "Google", "Broadcom", "Constellation Energy"],
+    "ground_truth": "Key partnerships include Microsoft with OpenAI for exclusive cloud hosting, Microsoft with Nvidia for Blackwell systems, Microsoft with Constellation Energy for nuclear power purchase agreements, and Google with Broadcom for TPU ASIC co-design."
+  }
+]

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Embedder Module
 Generates dense vector embeddings using local Ollama or OpenAI fallback.
 """

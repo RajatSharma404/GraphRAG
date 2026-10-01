@@ -4,13 +4,9 @@ import {
   RotateCcw, 
   ZoomIn, 
   ZoomOut, 
-  Layers, 
-  Maximize2, 
-  Sparkles,
-  Info,
-  Filter
+  Sparkles
 } from 'lucide-react';
-import { COMMUNITY_COLORS, getCommunityColor } from '../utils/colors';
+import { getCommunityColor } from '../utils/colors';
 
 export default function GraphViewer({
   graphData,
@@ -28,8 +24,13 @@ export default function GraphViewer({
   const [zoomLevel, setZoomLevel] = useState(1);
   const [hoveredNode, setHoveredNode] = useState(null);
 
-  const nodes = graphData?.nodes || [];
-  const links = graphData?.links || [];
+  const nodes = useMemo(() => graphData?.nodes || [], [graphData?.nodes]);
+  const links = useMemo(() => graphData?.links || [], [graphData?.links]);
+
+  const onNodeClickRef = useRef(onNodeClick);
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick;
+  }, [onNodeClick]);
 
   // Unique communities sorted
   const communities = useMemo(() => {
@@ -57,7 +58,8 @@ export default function GraphViewer({
   // 3D GRAPH MODE (ForceGraph3D)
   // ----------------------------------------------------------------------
   useEffect(() => {
-    if (!is3D || !containerRef.current) return;
+    const container = containerRef.current;
+    if (!is3D || !container) return;
 
     if (typeof window.ForceGraph3D !== 'function') {
       console.warn('3D Force Graph library not loaded, falling back to 2D view.');
@@ -65,22 +67,13 @@ export default function GraphViewer({
     }
 
     // Clean up container
-    containerRef.current.innerHTML = '';
+    container.innerHTML = '';
 
-    const fg = window.ForceGraph3D()(containerRef.current)
+    const fg = window.ForceGraph3D()(container)
       .backgroundColor('#07090e')
       .graphData({ nodes: [...nodes], links: [...links] })
       .nodeLabel((n) => `${n.id} (${n.type || 'Entity'})\nCommunity: ${n.group}`)
-      .nodeColor((n) => {
-        if (selectedNode && selectedNode.id === n.id) return '#ffffff';
-        if (searchTerm && !n.id.toLowerCase().includes(searchTerm.toLowerCase())) {
-          return 'rgba(255,255,255,0.08)';
-        }
-        if (activeCommunityFilter !== null && n.group !== activeCommunityFilter) {
-          return 'rgba(255,255,255,0.08)';
-        }
-        return getCommunityColor(n.group);
-      })
+      .nodeColor((n) => getCommunityColor(n.group))
       .nodeRelSize(5)
       .linkLabel((l) => l.label || 'RELATED_TO')
       .linkDirectionalParticles(2)
@@ -88,7 +81,7 @@ export default function GraphViewer({
       .linkDirectionalParticleSpeed(0.006)
       .linkColor(() => 'rgba(255,255,255,0.18)')
       .onNodeClick((node) => {
-        onNodeClick(node);
+        if (onNodeClickRef.current) onNodeClickRef.current(node);
         // Camera fly to node
         const distance = 50;
         const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
@@ -102,21 +95,21 @@ export default function GraphViewer({
     graph3DInstanceRef.current = fg;
 
     const handleResize = () => {
-      if (fg && containerRef.current) {
-        fg.width(containerRef.current.clientWidth);
-        fg.height(containerRef.current.clientHeight);
+      if (fg && container) {
+        fg.width(container.clientWidth);
+        fg.height(container.clientHeight);
       }
     };
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (containerRef.current) containerRef.current.innerHTML = '';
+      if (container) container.innerHTML = '';
       graph3DInstanceRef.current = null;
     };
   }, [is3D, nodes, links]);
 
-  // Update 3D colors when filters change
+  // Update 3D colors when filters change without tearing down WebGL canvas
   useEffect(() => {
     if (is3D && graph3DInstanceRef.current) {
       graph3DInstanceRef.current.nodeColor((n) => {
@@ -135,6 +128,22 @@ export default function GraphViewer({
   // ----------------------------------------------------------------------
   // 2D CANVAS FORCE-DIRECTED GRAPH ENGINE
   // ----------------------------------------------------------------------
+  const renderStateRef = useRef({
+    selectedNode,
+    hoveredNode,
+    searchTerm,
+    activeCommunityFilter,
+  });
+
+  useEffect(() => {
+    renderStateRef.current = {
+      selectedNode,
+      hoveredNode,
+      searchTerm,
+      activeCommunityFilter,
+    };
+  }, [selectedNode, hoveredNode, searchTerm, activeCommunityFilter]);
+
   const simulationRef = useRef({
     positions: new Map(),
     velocities: new Map(),
@@ -279,6 +288,13 @@ export default function GraphViewer({
       ctx.scale(sim.zoom, sim.zoom);
 
       // Draw Edges
+      const {
+        selectedNode: selNode,
+        hoveredNode: hovNode,
+        searchTerm: sTerm,
+        activeCommunityFilter: actComm,
+      } = renderStateRef.current;
+
       links.forEach((link) => {
         const sId = typeof link.source === 'object' ? link.source.id : link.source;
         const tId = typeof link.target === 'object' ? link.target.id : link.target;
@@ -287,7 +303,7 @@ export default function GraphViewer({
 
         if (p1 && p2) {
           const isHighlighted =
-            selectedNode && (selectedNode.id === sId || selectedNode.id === tId);
+            selNode && (selNode.id === sId || selNode.id === tId);
 
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
@@ -315,14 +331,14 @@ export default function GraphViewer({
         const p = sim.positions.get(node.id);
         if (!p) return;
 
-        const isSelected = selectedNode && selectedNode.id === node.id;
-        const isHovered = hoveredNode && hoveredNode.id === node.id;
+        const isSelected = selNode && selNode.id === node.id;
+        const isHovered = hovNode && hovNode.id === node.id;
         const color = getCommunityColor(node.group);
 
         const isFiltered =
-          (searchTerm &&
-            !node.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (activeCommunityFilter !== null && node.group !== activeCommunityFilter);
+          (sTerm &&
+            !node.id.toLowerCase().includes(sTerm.toLowerCase())) ||
+          (actComm !== null && node.group !== actComm);
 
         const alpha = isFiltered ? 0.15 : 1;
         const radius = isSelected ? 12 : isHovered ? 10 : 7;
@@ -369,7 +385,7 @@ export default function GraphViewer({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [is3D, nodes, links, selectedNode, hoveredNode, searchTerm, activeCommunityFilter]);
+  }, [is3D, nodes, links]);
 
   // Handle Canvas Mouse Interactivity
   const handleMouseDown = (e) => {
@@ -397,7 +413,7 @@ export default function GraphViewer({
 
     if (clicked) {
       sim.dragNode = clicked.id;
-      onNodeClick(clicked);
+      if (onNodeClickRef.current) onNodeClickRef.current(clicked);
     } else {
       sim.isDragging = true;
     }
@@ -561,6 +577,9 @@ export default function GraphViewer({
           >
             <ZoomOut className="w-4 h-4" />
           </button>
+          <span className="text-[10px] text-slate-400 font-mono px-1 select-none">
+            {Math.round(zoomLevel * 100)}%
+          </span>
           <div className="w-px h-4 bg-white/10 mx-0.5" />
           <button
             onClick={resetCamera}

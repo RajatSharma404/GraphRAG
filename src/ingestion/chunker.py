@@ -14,6 +14,10 @@ class DocumentChunker:
     def __init__(self, chunk_size: int = None, chunk_overlap: int = None):
         self.chunk_size = chunk_size or settings.chunk_size
         self.chunk_overlap = chunk_overlap or settings.chunk_overlap
+        if self.chunk_size <= 0:
+            self.chunk_size = 600
+        if self.chunk_overlap >= self.chunk_size:
+            self.chunk_overlap = max(0, self.chunk_size // 4)
 
     def load_pdf(self, file_path: str) -> List[TextChunk]:
         """Reads a PDF file page by page and chunks the text."""

@@ -51,6 +51,15 @@ class GraphRAGPipeline:
             
         console.print(f"Created [bold green]{len(chunks)}[/bold green] text chunks.")
 
+        # 1.5 Generate Dense Vector Embeddings for Chunks
+        try:
+            self.embedder.embed_chunks(chunks)
+            embedded_count = sum(1 for c in chunks if c.embedding)
+            if embedded_count > 0:
+                console.print(f"Generated dense embeddings for [bold cyan]{embedded_count}[/bold cyan] chunks.")
+        except Exception as e:
+            console.print(f"[yellow]Vector embedding skipped: {e}[/yellow]")
+
         # 2. Extract & Ingest each chunk
         with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}")) as progress:
             task = progress.add_task("[cyan]Extracting graph elements...", total=len(chunks))
@@ -78,6 +87,16 @@ class GraphRAGPipeline:
         else:
             return self.local_search.search(query)
 
+    def ask_with_context(self, query: str, mode: str = "local"):
+        """Returns tuple of (answer, retrieved_context) for evaluation and auditing."""
+        console.print(f"\n[bold magenta]Mode (EVAL): {mode.upper()}[/bold magenta] | Query: [italic]{query}[/italic]\n")
+        if mode == "global":
+            answer, context = self.global_search.search_with_context(query)
+            return answer, context
+        else:
+            answer, context = self.local_search.search_with_context(query)
+            return answer, context
+
     def ask_stream(self, query: str, mode: str = "local"):
         """Streaming query entrypoint yielding real-time tokens."""
         console.print(f"\n[bold magenta]Mode (STREAM): {mode.upper()}[/bold magenta] | Query: [italic]{query}[/italic]\n")
@@ -85,4 +104,5 @@ class GraphRAGPipeline:
             yield from self.global_search.search_stream(query)
         else:
             yield from self.local_search.search_stream(query)
+
 

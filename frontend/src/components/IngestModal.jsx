@@ -4,7 +4,6 @@ import {
   UploadCloud, 
   FileText, 
   AlignLeft, 
-  CheckCircle2, 
   AlertCircle, 
   Sparkles,
   ArrowRight
@@ -88,7 +87,7 @@ export default function IngestModal({ isOpen, onClose, onIngestSuccess }) {
           spread: 70,
           origin: { y: 0.6 },
         });
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -130,7 +129,7 @@ export default function IngestModal({ isOpen, onClose, onIngestSuccess }) {
           spread: 70,
           origin: { y: 0.6 },
         });
-      } catch (e) {
+      } catch {
         // ignore
       }
 

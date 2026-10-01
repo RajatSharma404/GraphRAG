@@ -29,6 +29,24 @@ def test_entity_resolver_normalization():
     assert EntityResolver.normalize_name("Tesla LLC") == "Tesla"
     assert EntityResolver.normalize_name("   nvidia corp.  ") == "Nvidia"
     assert EntityResolver.normalize_name("ASML") == "ASML"
+    assert EntityResolver.normalize_name("asml") == "ASML"
+    assert EntityResolver.normalize_name("tsmc") == "TSMC"
+    assert EntityResolver.normalize_name("ibm") == "IBM"
+
+def test_chunker_overlap_guard():
+    # If overlap is set equal to or greater than chunk size, it should auto-clamp
+    chunker = DocumentChunker(chunk_size=100, chunk_overlap=150)
+    assert chunker.chunk_overlap < chunker.chunk_size
+    assert chunker.chunk_overlap == 25
+
+def test_extractor_json_repair_trailing_commas():
+    from src.extraction.extractor import GraphExtractor
+    malformed = '```json\n{"entities": [{"name": "ASML", "type": "ORGANIZATION",}], "relationships": [],}\n```'
+    cleaned = GraphExtractor._clean_json_string(malformed)
+    import json
+    data = json.loads(cleaned)
+    assert len(data["entities"]) == 1
+    assert data["entities"][0]["name"] == "ASML"
 
 def test_extracted_graph_schema_validation():
     entity = Entity(name="Nvidia", type="ORGANIZATION", description="GPU manufacturer")
@@ -48,4 +66,15 @@ def test_local_search_empty_query_stream():
     tokens = list(engine.search_stream(""))
     assert len(tokens) == 1
     assert "valid question" in tokens[0]
+
+def test_local_search_with_context():
+    from src.retrieval.local_search import LocalSearchEngine
+    class DummyNeo4j:
+        def execute_query(self, q, p=None):
+            return []
+    engine = LocalSearchEngine(DummyNeo4j())
+    ans, ctx = engine.search_with_context("")
+    assert "valid question" in ans
+    assert ctx == ""
+
 

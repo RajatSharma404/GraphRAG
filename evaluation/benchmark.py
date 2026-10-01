@@ -1,4 +1,4 @@
-﻿import sys, os
+import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 """
 Automated GraphRAG Benchmark Runner
@@ -38,12 +38,9 @@ def run_benchmark():
         console.print(f"\n[cyan]Evaluating ({mode.upper()}):[/cyan] {query}")
 
         start_time = time.time()
-        # Execute Query
-        answer = pipeline.ask(query, mode=mode)
+        # Execute Query with genuine retrieved sub-graph & chunk context
+        answer, context = pipeline.ask_with_context(query, mode=mode)
         latency = round(time.time() - start_time, 2)
-
-        # Context representation
-        context = answer # In GraphRAG, answer is grounded in retrieved context
 
         # Compute Ragas metrics
         metrics = evaluator.evaluate_all(query, ground_truth, context, answer)

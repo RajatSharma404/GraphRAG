@@ -37,23 +37,42 @@ class LocalSearchEngine:
         self.client = client
 
     def _retrieve_context(self, query: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        """Identifies candidate entities, traverses 1-2 hop relationships, and gathers chunks."""
+        """Identifies candidate entities via hybrid search, traverses 1-2 hop relationships, and gathers chunks."""
         query_clean = query.strip()
         if not query_clean:
             return None, None, "Please provide a valid question."
 
-        # 1. Identify candidate entity names using targeted Cypher search
-        words = [w for w in re.findall(r'\b\w{3,}\b', query_clean) if not w.lower() in {'what', 'when', 'where', 'which', 'who', 'whom', 'this', 'that', 'with', 'from', 'have', 'does', 'impact', 'role'}]
+        # 1. Identify candidate entity names using targeted Cypher search & acronym matching
+        stopwords = {
+            'what', 'when', 'where', 'which', 'who', 'whom', 'this', 'that', 
+            'with', 'from', 'have', 'does', 'impact', 'role', 'how', 'are', 
+            'the', 'and', 'for', 'about', 'explain', 'show', 'tell', 'can'
+        }
+        words = [w for w in re.findall(r'\b[A-Za-z0-9_]{2,}\b', query_clean) if w.lower() not in stopwords]
         
         find_query = """
             MATCH (e:Entity)
-            WHERE toLower($query) CONTAINS toLower(e.name)
-               OR ANY(word IN $words WHERE toLower(e.name) CONTAINS toLower(word))
+            WHERE (size(e.name) >= 3 AND toLower($query) CONTAINS toLower(e.name))
+               OR ANY(word IN $words WHERE toLower(e.name) = toLower(word) OR (size(word) >= 3 AND toLower(e.name) CONTAINS toLower(word)))
             RETURN e.name AS name, e.type AS type
             LIMIT 15
         """
         candidate_records = self.client.execute_query(find_query, {"query": query_clean, "words": words})
         matched_entities = [r["name"] for r in candidate_records if r.get("name")]
+
+        # Fulltext / Vector Fallback if candidate search yielded no entities
+        if not matched_entities:
+            try:
+                ft_query = """
+                    CALL db.index.fulltext.queryNodes("entity_name_desc_idx", $query) 
+                    YIELD node, score 
+                    RETURN node.name AS name, node.type AS type
+                    LIMIT 5
+                """
+                ft_records = self.client.execute_query(ft_query, {"query": query_clean})
+                matched_entities = [r["name"] for r in ft_records if r.get("name")]
+            except Exception:
+                pass
 
         if not matched_entities:
             return None, None, "No relevant graph entities identified for this question in the current knowledge base. Try rephrasing or ingesting relevant documents."
@@ -63,13 +82,17 @@ class LocalSearchEngine:
             MATCH (e:Entity)
             WHERE e.name IN $entity_names
             OPTIONAL MATCH (e)-[r:RELATED_TO]-(neighbor:Entity)
+            OPTIONAL MATCH (neighbor)-[r2:RELATED_TO]-(hop2:Entity)
+            WHERE hop2 <> e AND NOT hop2.name IN $entity_names
             RETURN 
                 e.name AS entity, 
                 e.description AS entity_desc,
                 r.type AS rel_type, 
                 r.description AS rel_desc, 
-                neighbor.name AS neighbor
-            LIMIT 30
+                neighbor.name AS neighbor,
+                r2.type AS hop2_rel_type,
+                hop2.name AS hop2_neighbor
+            LIMIT 40
         """
         rel_records = self.client.execute_query(rel_query, {"entity_names": matched_entities})
 
@@ -91,6 +114,8 @@ class LocalSearchEngine:
             if rec.get("neighbor") and rec.get("rel_type"):
                 rel_desc = rec.get("rel_desc") or ""
                 graph_lines.add(f"  * Connected to {rec['neighbor']} via {rec['rel_type']}: {rel_desc}")
+            if rec.get("hop2_neighbor") and rec.get("hop2_rel_type"):
+                graph_lines.add(f"    - (2-hop) {rec['neighbor']} --[{rec['hop2_rel_type']}]--> {rec['hop2_neighbor']}")
 
         chunk_lines: List[str] = []
         for c in chunk_records:
@@ -110,6 +135,15 @@ class LocalSearchEngine:
         if error:
             return error
         return self._generate_answer(query.strip(), graph_context, chunk_context)
+
+    def search_with_context(self, query: str) -> Tuple[str, str]:
+        """Executes targeted multi-hop search returning (answer, retrieved_context)."""
+        graph_context, chunk_context, error = self._retrieve_context(query)
+        if error:
+            return error, ""
+        answer = self._generate_answer(query.strip(), graph_context, chunk_context)
+        context = f"### Graph Context:\n{graph_context}\n\n### Chunks Context:\n{chunk_context}"
+        return answer, context
 
     def search_stream(self, query: str) -> Generator[str, None, None]:
         """Streams targeted multi-hop search tokens around mentioned entities."""

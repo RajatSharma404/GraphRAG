@@ -29,7 +29,9 @@ class EntityResolver:
             return "UNKNOWN"
 
         # Preserve canonical acronyms like ASML, TSMC, IBM, NVIDIA
-        if cleaned.isupper() or len(cleaned) <= 4:
+        if len(cleaned) <= 4:
+            return cleaned.upper()
+        if cleaned.isupper():
             return cleaned
         return cleaned.title()
 
@@ -41,22 +43,39 @@ class GraphIngester:
         """Stores raw chunk, creates Entity nodes, creates Relations, and links citations via batched Cypher."""
         driver = self.client.connect()
         with driver.session() as session:
-            # 1. Ingest Chunk Node
-            session.run("""
-                MERGE (c:Chunk {id: $chunk_id})
-                ON CREATE SET 
-                    c.document_name = $doc_name,
-                    c.page_number = $page_number,
-                    c.content = $content,
-                    c.token_count = $token_count,
-                    c.created_at = datetime()
-            """, {
+            # 1. Ingest Chunk Node (persisting embeddings if available)
+            chunk_params: Dict[str, Any] = {
                 "chunk_id": chunk.chunk_id,
                 "doc_name": chunk.document_name,
                 "page_number": chunk.page_number,
                 "content": chunk.content,
                 "token_count": chunk.token_count
-            })
+            }
+            if chunk.embedding:
+                chunk_params["embedding"] = chunk.embedding
+                chunk_query = """
+                    MERGE (c:Chunk {id: $chunk_id})
+                    ON CREATE SET 
+                        c.document_name = $doc_name,
+                        c.page_number = $page_number,
+                        c.content = $content,
+                        c.token_count = $token_count,
+                        c.embedding = $embedding,
+                        c.created_at = datetime()
+                    ON MATCH SET
+                        c.embedding = coalesce(c.embedding, $embedding)
+                """
+            else:
+                chunk_query = """
+                    MERGE (c:Chunk {id: $chunk_id})
+                    ON CREATE SET 
+                        c.document_name = $doc_name,
+                        c.page_number = $page_number,
+                        c.content = $content,
+                        c.token_count = $token_count,
+                        c.created_at = datetime()
+                """
+            session.run(chunk_query, chunk_params)
 
             # 2. Prepare Batched Entities
             entity_batch: List[Dict[str, Any]] = []

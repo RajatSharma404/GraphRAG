@@ -62,7 +62,9 @@ class GlobalSearchEngine:
         def process_summary(summary_rec):
             comm_id = summary_rec["id"]
             content = summary_rec.get("summary", "").strip()
-            point = self._map_community(client, comm_id, content, query_clean)
+            # Thread-safe isolated HTTP client execution per task
+            with httpx.Client(timeout=60.0) as thread_client:
+                point = self._map_community(thread_client, comm_id, content, query_clean)
             if point and "NO_RELEVANT_DATA" not in point:
                 return f"### Community {comm_id} Findings:\n{point}"
             return None
@@ -91,6 +93,20 @@ class GlobalSearchEngine:
 
             # Reduce Step: Synthesize into executive response
             return self._reduce_findings(client, all_findings, query_clean)
+
+    def search_with_context(self, query: str) -> Tuple[str, str]:
+        """Executes Map-Reduce global search returning (answer, intermediate_findings)."""
+        query_clean = query.strip()
+        if not query_clean:
+            return "Please enter a valid question.", ""
+
+        with httpx.Client(timeout=120.0) as client:
+            all_findings, error = self._execute_map_phase(client, query_clean)
+            if error:
+                return error, ""
+
+            answer = self._reduce_findings(client, all_findings, query_clean)
+            return answer, all_findings
 
     def search_stream(self, query: str) -> Generator[str, None, None]:
         """Executes Map-Reduce global search yielding streaming tokens during the synthesis phase."""

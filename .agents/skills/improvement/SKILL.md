@@ -39,6 +39,7 @@ Evaluate the code across 5 distinct dimensions:
    - Express 5 & Node.js: Native async route error propagation, middleware safety, security headers (Helmet).
    - Prisma & PostgreSQL: Index strategies, connection pool sizing, transactional isolation.
    - Python / FastAPI / Flask: Async concurrency, Pydantic v2 schemas, connection reuse, dependency injection.
+   - Knowledge Graphs & GraphRAG: Neo4j Cypher parameterization, fulltext/vector hybrid indexing, community clustering (Louvain/Leiden) modularity weighting, Map-Reduce summarization scalability, anti-hallucination ground truth evaluation (Ragas), HTTP connection pooling thread safety.
 
 ### Step 3: Proactive Feature Engineering & Multi‑Path Planning
 For each identified improvement, **brainstorm at least two distinct implementation approaches** (e.g., library substitution vs. custom solution, incremental rollout vs. big‑bang). Then **draft a detailed execution plan** covering:

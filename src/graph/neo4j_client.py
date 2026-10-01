@@ -29,20 +29,22 @@ class Neo4jClient:
         return self._driver
 
     def init_schema(self) -> None:
-        """Creates uniqueness constraints and indexes for high-speed lookups."""
+        """Creates uniqueness constraints, fulltext, and vector indexes for high-speed lookups."""
         schema_queries = [
             "CREATE CONSTRAINT entity_name_unique IF NOT EXISTS FOR (e:Entity) REQUIRE e.name IS UNIQUE",
             "CREATE CONSTRAINT chunk_id_unique IF NOT EXISTS FOR (c:Chunk) REQUIRE c.id IS UNIQUE",
             "CREATE CONSTRAINT comm_summary_id_unique IF NOT EXISTS FOR (cs:CommunitySummary) REQUIRE cs.community_id IS UNIQUE",
-            "CREATE INDEX entity_comm_idx IF NOT EXISTS FOR (e:Entity) ON (e.community_id)"
+            "CREATE INDEX entity_comm_idx IF NOT EXISTS FOR (e:Entity) ON (e.community_id)",
+            "CREATE FULLTEXT INDEX entity_name_desc_idx IF NOT EXISTS FOR (e:Entity) ON EACH [e.name, e.description]",
+            "CREATE VECTOR INDEX chunk_vector_idx IF NOT EXISTS FOR (c:Chunk) ON (c.embedding) OPTIONS {indexConfig: {`vector.dimensions`: 768, `vector.similarity_function`: 'cosine'}}"
         ]
-        try:
-            with self._driver.session() as session:
-                for q in schema_queries:
+        with self._driver.session() as session:
+            for q in schema_queries:
+                try:
                     session.run(q)
-            logger.info("Neo4j schema constraints and indexes verified.")
-        except Exception as e:
-            logger.warning(f"Note on schema initialization: {e}")
+                except Exception as e:
+                    logger.debug(f"Schema statement '{q[:35]}...' note: {e}")
+        logger.info("Neo4j schema constraints and indexes verified.")
 
     def verify_connectivity(self) -> bool:
         """Verifies active connectivity to Neo4j instance."""

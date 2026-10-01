@@ -48,16 +48,33 @@ async def add_security_headers(request: Request, call_next):
 RATE_LIMIT_MAX = 120
 RATE_LIMIT_WINDOW = 60
 client_request_history: Dict[str, List[float]] = defaultdict(list)
+last_rate_cleanup_time = time.time()
 
 @app.middleware("http")
 async def rate_limiting_middleware(request: Request, call_next):
+    global last_rate_cleanup_time
     if request.url.path.startswith("/api/"):
-        client_ip = request.client.host if request.client else "127.0.0.1"
+        forwarded = request.headers.get("x-forwarded-for")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "127.0.0.1")
         now = time.time()
-        client_request_history[client_ip] = [
+
+        # Filter sliding window
+        valid_requests = [
             t for t in client_request_history[client_ip] if now - t < RATE_LIMIT_WINDOW
         ]
-        if len(client_request_history[client_ip]) >= RATE_LIMIT_MAX:
+        client_request_history[client_ip] = valid_requests
+
+        # Periodic dictionary pruning to prevent unbounded process memory growth
+        if now - last_rate_cleanup_time > 300:
+            stale_ips = [
+                ip for ip, timestamps in list(client_request_history.items())
+                if not timestamps or now - timestamps[-1] >= RATE_LIMIT_WINDOW
+            ]
+            for ip in stale_ips:
+                client_request_history.pop(ip, None)
+            last_rate_cleanup_time = now
+
+        if len(valid_requests) >= RATE_LIMIT_MAX:
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please throttle your queries."}

@@ -8,7 +8,6 @@ import {
   Copy, 
   Check, 
   Sparkles, 
-  Layers, 
   Trash, 
   ArrowRight,
   Info
@@ -45,7 +44,7 @@ const SUGGESTIONS = [
   },
 ];
 
-export default function ChatPanel({ onNodeSelect }) {
+export default function ChatPanel({ onNodeSelect: _onNodeSelect }) {
   const [mode, setMode] = useState('local'); // 'local' | 'global'
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState([
@@ -79,7 +78,7 @@ Ask a question or select a prompt below to explore your knowledge graph.`,
     const trimmed = queryText.trim();
     if (!trimmed || isLoading) return;
 
-    const userMsgId = 'usr-' + Date.now();
+    const userMsgId = 'usr-' + crypto.randomUUID();
     const userMsg = {
       id: userMsgId,
       sender: 'user',
@@ -88,7 +87,7 @@ Ask a question or select a prompt below to explore your knowledge graph.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    const assistantMsgId = 'ast-' + Date.now();
+    const assistantMsgId = 'ast-' + crypto.randomUUID();
     const assistantMsg = {
       id: assistantMsgId,
       sender: 'assistant',
@@ -167,7 +166,7 @@ Ask a question or select a prompt below to explore your knowledge graph.`,
   const handleClearChat = () => {
     setMessages([
       {
-        id: 'welcome-' + Date.now(),
+        id: 'welcome-' + crypto.randomUUID(),
         sender: 'assistant',
         text: `Conversation cleared. Ready for your next query in **${mode === 'local' ? 'Local' : 'Global'} Search** mode.`,
         mode,

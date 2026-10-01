@@ -55,15 +55,24 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
-    loadHealth();
-    loadGraph();
+    let active = true;
+    const fetchInitial = async () => {
+      if (!active) return;
+      await loadHealth();
+      if (!active) return;
+      await loadGraph();
+    };
+    fetchInitial();
 
     // Periodic telemetry ping every 20 seconds
     const interval = setInterval(() => {
       loadHealth();
     }, 20000);
 
-    return () => clearInterval(interval);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [loadHealth, loadGraph]);
 
   // Handle Louvain Re-clustering

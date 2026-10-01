@@ -7,15 +7,16 @@
 [![Neo4j 5.20](https://img.shields.io/badge/Neo4j-5.20_Community-008CC1.svg?logo=neo4j&logoColor=white)](https://neo4j.com/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local_Inference-white.svg?logo=ollama&logoColor=black)](https://ollama.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React 18](https://img.shields.io/badge/React-18.3.1-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![React 19](https://img.shields.io/badge/React-19.2.8-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind 4](https://img.shields.io/badge/Tailwind-4.3.3-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.64.0-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Ragas Score](https://img.shields.io/badge/Ragas_Composite-0.931-success.svg)](#-quantitative-benchmarks-ragas-framework)
-[![Tests Passing](https://img.shields.io/badge/Tests-5%2F5_Passing-brightgreen.svg)](#-test-suite--quality-assurance)
+[![Tests Passing](https://img.shields.io/badge/Tests-8%2F8_Passing-brightgreen.svg)](#-test-suite--quality-assurance)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <strong>A production-grade, ground-up Graph Retrieval-Augmented Generation (GraphRAG) architecture built with zero monolithic wrapper libraries.</strong><br>
-  Engineered to eliminate high-dimensional vector search failure modes through topological graph theory, Louvain community modularity, grounded Cypher traversals, parallel Map-Reduce synthesis, and real-time token streaming.
+  Engineered to eliminate high-dimensional vector search failure modes through topological graph theory, dense vector indexing, Louvain community modularity, grounded Cypher traversals, parallel Map-Reduce synthesis, and real-time token streaming.
 </p>
 
 [Architectural Overview](#-architectural-overview) •
@@ -36,14 +37,16 @@
 ## ⚡ Architectural Overview
 
 The **Hybrid GraphRAG Engine** bridges the gap between unstructured textual data and structured graph intelligence. Built completely from foundational primitives, it combines:
-1. **Deterministic Sliding-Window Ingestion** with SHA-256 idempotency.
-2. **Strict Schema Information Extraction** via local LLMs (`llama3.1:8b` / `llama3.2:3b`).
-3. **Entity Resolution & Provenance Ingestion** in Neo4j with batched UNWIND transactions.
-4. **Louvain Modularity Partitioning & Synthesis** in NetworkX for hierarchical community detection.
-5. **Dual-Mode Retrieval Pipeline**:
-   - **Local Search:** Targeted multi-hop Cypher traversals around identified entities with exact chunk citations.
-   - **Global Search:** Concurrent Map-Reduce over hierarchical community summaries for dataset-wide themes.
-6. **Real-Time Token Streaming & Production Hardening**: Server-Sent streaming, security headers (CSP, nosniff, DENY), and sliding-window rate limiting.
+1. **Deterministic Sliding-Window Ingestion** with SHA-256 idempotency and chunk overlap safety guards.
+2. **Strict Schema Information Extraction** via local LLMs (`llama3.1:8b` / `llama3.2:3b`) with JSON fence stripping and trailing-comma repair.
+3. **Dense Vector Embeddings & Hybrid Graph Ingestion** in Neo4j with fulltext indexes (`entity_name_desc_idx`) and vector indexes (`chunk_vector_idx`).
+4. **Case-Sensitive Entity Normalization** canonicalizing short acronyms (e.g. *ASML*, *TSMC*, *IBM*) into uppercase to eliminate graph node fragmentation.
+5. **Louvain Modularity Partitioning & Multi-Edge Weight Accumulation** in NetworkX for hierarchical community detection.
+6. **Parallelized Community Summarization** across clusters with context bounds to eliminate LLM timeouts.
+7. **Dual-Mode Retrieval Pipeline**:
+   - **Local Search:** Targeted 1-to-2 hop multi-hop Cypher traversals around identified entities with fulltext fallback and exact chunk citations.
+   - **Global Search:** Concurrent thread-safe Map-Reduce over hierarchical community summaries for dataset-wide themes.
+8. **Real-Time Token Streaming & Production Hardening**: Server-Sent streaming, security headers (CSP, nosniff, DENY), reverse-proxy IP handling, and sliding-window rate limiting with memory eviction.
 
 ```mermaid
 flowchart TD
@@ -154,15 +157,16 @@ This engine includes **two standalone, production-ready web interfaces**:
 +--------------------------------------------+--------------------------------------------+
 ```
 
-### 1. Modern React 18 + Vite 3D Web Studio (`frontend/`)
+### 1. Modern React 19 + Tailwind CSS 4 Web Studio (`frontend/`)
 * **Dev Server:** `cd frontend && npm run dev` $\to$ `http://localhost:5173`
 * **Production Server:** Built via `npm run build` and mounted directly by FastAPI at `http://localhost:8000`
 * **Features:**
   * **Real-Time Token Streaming:** Dual-mode chat streaming response tokens as they are generated by the LLM via `/api/query-stream`.
-  * **Interactive 3D WebGL Force Graph:** Powered by Three.js & `3d-force-graph`, rendering directional particle flows, community cluster palette coloring, and camera focus animations.
-  * **Node Inspector Drawer:** Click any node to slide open a detailed drawer displaying entity categorization, Louvain cluster index, description, and list of incident relationships.
-  * **Document Ingestion Modal:** Drag-and-drop file upload (`.pdf`, `.txt`, `.md`) with file size validation and direct text submission.
-  * **Cluster & Purge Triggers:** On-demand re-clustering and database purging with safety confirmation modals.
+  * **Interactive 3D WebGL Force Graph & 2D Engine:** Powered by Three.js & `3d-force-graph` with stabilized lifecycle hooks, zero WebGL context tearing, synchronized render state, directional particle flows, community cluster palette coloring, and live zoom percentage HUD indicator.
+  * **Node Inspector Drawer:** Click any node to slide open a detailed drawer displaying entity categorization, Louvain cluster index, description, and list of incident relationships with 2-hop navigation.
+  * **Document Ingestion Modal:** Drag-and-drop file upload (`.pdf`, `.txt`, `.md`) with file size validation, text submission, and automatic vector embedding.
+  * **Cluster & Purge Triggers:** On-demand parallelized re-clustering and database purging with safety confirmation modals.
+  * **Zero Linter Warnings:** Audited and optimized with `oxlint` (0 warnings, 0 errors).
 
 ### 2. Streamlit Analytics & Evaluation Dashboard (`streamlit_app.py`)
 * **Start:** `streamlit run streamlit_app.py` $\to$ `http://localhost:8501`
@@ -178,49 +182,54 @@ This engine includes **two standalone, production-ready web interfaces**:
 
 ## 🧬 Step-by-Step Pipeline Walkthrough
 
-### Phase 1: Deterministic Document Chunking
+### Phase 1: Deterministic Document Chunking & Overlap Guards
 * **File:** [`src/ingestion/chunker.py`](src/ingestion/chunker.py)
 * Splits documents using a token-aware sliding window (default: 600 words with 100-word overlap) while preserving word and sentence boundaries.
+* Automatically enforces safety clamping if `chunk_overlap >= chunk_size` to prevent token step underflow to 1.
 * Computes an idempotent, deterministic SHA-256 chunk hash:
   $$\text{chunk\_id} = \text{SHA256}(\text{doc\_name} \parallel \text{page} \parallel \text{offset} \parallel \text{text}[:50])[:16]$$
   This guarantees that re-indexing identical text never duplicates chunk nodes in Neo4j.
 
-### Phase 2: Schema-Constrained Information Extraction
+### Phase 2: Schema-Constrained Extraction & JSON Repair
 * **Files:** [`src/extraction/extractor.py`](src/extraction/extractor.py) • [`src/extraction/schemas.py`](src/extraction/schemas.py)
 * Enforces strict Pydantic schemas:
   * **Entity:** `name` (canonical), `type` (`ORGANIZATION`, `PERSON`, `TECHNOLOGY`, `CONCEPT`, `LOCATION`, `EVENT`, `METRIC`), `description`.
   * **Relationship:** `source`, `target`, `relation_type` (UPPERCASE verb), `description`, `weight` ($0.0 \le w \le 1.0$).
-* Prompts local `llama3.1:8b` / `llama3.2:3b` with `format="json"` and `temperature=0.0`. Employs a robust markdown fence stripper and outer-brace isolate to guarantee valid JSON deserialization.
+* Prompts local `llama3.1:8b` / `llama3.2:3b` with `format="json"` and `temperature=0.0`.
+* Employs robust markdown fence stripping, outer-brace isolation, and regex trailing-comma repair to prevent discarding valid extractions.
 
-### Phase 3: Entity Resolution & Batched Neo4j Ingestion
-* **Files:** [`src/graph/resolver.py`](src/graph/resolver.py) • [`src/graph/neo4j_client.py`](src/graph/neo4j_client.py)
-* **Entity Normalization:** Strips common legal suffixes (*Inc.*, *Corp.*, *LLC*, *Ltd.*), cleans casing, preserves canonical acronyms (*ASML*, *TSMC*, *NVIDIA*, *IBM*).
+### Phase 3: Dense Vector Embeddings & Batched Neo4j Ingestion
+* **Files:** [`src/extraction/embedder.py`](src/extraction/embedder.py) • [`src/graph/resolver.py`](src/graph/resolver.py) • [`src/graph/neo4j_client.py`](src/graph/neo4j_client.py)
+* **Dense Embeddings:** Computes vector representations for chunks using `nomic-embed-text` with HTTP client connection pooling.
+* **Entity Normalization:** Strips common legal suffixes (*Inc.*, *Corp.*, *LLC*, *Ltd.*), canonicalizes all short acronyms $\le 4$ chars (*ASML*, *TSMC*, *IBM*, *AMD*) into uppercase to eliminate graph node fragmentation, and title-cases longer entities.
 * **Cypher `MERGE` Transactions:**
+  * Stores chunk properties including dense vectors `c.embedding`.
   * Uses batched `UNWIND` queries to ingest entities and relationships in unified transactions.
   * Increments mention counts (`e.mentions = e.mentions + 1`), consolidates descriptions, and caps length at 1,200 characters to prevent database bloat.
-  * Creates uniqueness constraints on `(e:Entity {name})` and `(c:Chunk {id})`.
+  * Provisions uniqueness constraints (`e.name`, `c.id`, `cs.community_id`), full-text indexes (`entity_name_desc_idx`), and vector indexes (`chunk_vector_idx`).
   * Links provenance via `(e)-[:MENTIONED_IN]->(c:Chunk)`.
 
-### Phase 4: Louvain Community Detection & Summarization
+### Phase 4: Louvain Modularity Partitioning & Parallel Summarization
 * **File:** [`src/graph/communities.py`](src/graph/communities.py)
-* Extracts Neo4j entities and relationships into an in-memory `networkx.Graph` with edge weights.
+* Extracts Neo4j entities and relationships into an in-memory `networkx.Graph`, accumulating edge weights for multi-relationship pairs.
 * Executes the **Louvain modularity optimization algorithm** (`python-louvain`):
   $$Q = \frac{1}{2m} \sum_{i,j} \left[ A_{ij} - \frac{k_i k_j}{2m} \right] \delta(c_i, c_j)$$
   Assigns entities to structural community clusters based on connection density.
 * Writes `e.community_id` back to Neo4j in a single batched `UNWIND` write.
-* Prompts the LLM to generate an executive intelligence summary report for each community and writes a `(:CommunitySummary)` node to the database.
+* **Parallel Summaries:** Spawns a concurrent worker pool (`ThreadPoolExecutor(max_workers=3)`) to synthesize executive intelligence summaries across all detected communities in parallel, bounding relation context to prevent LLM window overflow. Writes `(:CommunitySummary)` nodes to Neo4j.
 
 ### Phase 5: The Dual Retrieval & Streaming Engine
 * **Files:** [`src/retrieval/local_search.py`](src/retrieval/local_search.py) • [`src/retrieval/global_search.py`](src/retrieval/global_search.py) • [`src/pipeline.py`](src/pipeline.py)
-* **Local Search (Entity-Centric Multi-Hop):**
-  1. Identifies candidate entity mentions using targeted Cypher keyword matching.
-  2. Traverses 1-to-2 hops around matched entities in Neo4j: `MATCH (e)-[r:RELATED_TO]-(neighbor)`.
+* **Local Search (Entity-Centric 1-to-2 Hop):**
+  1. Identifies candidate entity mentions using targeted Cypher keyword matching with fulltext index fallback (`entity_name_desc_idx`).
+  2. Traverses 1-to-2 hops around matched entities in Neo4j:
+     `MATCH (e)-[r:RELATED_TO]-(neighbor) OPTIONAL MATCH (neighbor)-[r2:RELATED_TO]-(hop2)`.
   3. Retrieves linked raw text chunks for grounded citations.
-  4. Supports synchronous synthesis (`search`) and real-time token streaming (`search_stream`).
+  4. Supports synchronous synthesis (`search`), context auditing (`search_with_context`), and real-time token streaming (`search_stream`).
 * **Global Search (Dataset-Wide Map-Reduce):**
   1. Queries all top `CommunitySummary` nodes ordered by member count.
-  2. **Parallel Map Phase:** Spawns a `ThreadPoolExecutor` (up to 5 concurrent workers) to evaluate relevance across communities concurrently.
-  3. **Reduce Phase:** Aggregates intermediate findings and synthesizes an executive response with streaming support (`search_stream`).
+  2. **Thread-Safe Map Phase:** Spawns a `ThreadPoolExecutor` with isolated HTTP client sessions to evaluate relevance across communities concurrently.
+  3. **Reduce Phase:** Aggregates intermediate findings and synthesizes an executive response with streaming support (`search_stream`) and context retrieval (`search_with_context`).
 
 ---
 
@@ -453,7 +462,7 @@ Open **[http://localhost:8501](http://localhost:8501)** for tabular data inspect
 
 Run the automated unit test suite:
 ```bash
-pytest
+pytest -v
 ```
 Output:
 ```text
@@ -461,18 +470,29 @@ Output:
 platform win32 -- Python 3.13.3, pytest-9.1.1, pluggy-1.6.0
 rootdir: D:\GraphRAG
 plugins: anyio-4.15.1
-collected 5 items
+collected 8 items
 
-tests\test_graphrag.py .....                                             [100%]
-============================== 5 passed in 0.85s ==============================
+tests/test_graphrag.py::test_settings_loaded PASSED                      [ 12%]
+tests/test_graphrag.py::test_chunker_deterministic_split PASSED          [ 25%]
+tests/test_graphrag.py::test_entity_resolver_normalization PASSED        [ 37%]
+tests/test_graphrag.py::test_chunker_overlap_guard PASSED                [ 50%]
+tests/test_graphrag.py::test_extractor_json_repair_trailing_commas PASSED [ 62%]
+tests/test_graphrag.py::test_extracted_graph_schema_validation PASSED    [ 75%]
+tests/test_graphrag.py::test_local_search_empty_query_stream PASSED      [ 87%]
+tests/test_graphrag.py::test_local_search_with_context PASSED            [100%]
+
+============================== 8 passed in 0.63s ==============================
 ```
 
 Tests validate:
 1. **`test_settings_loaded`**: Pydantic BaseSettings loading from `.env`.
 2. **`test_chunker_deterministic_split`**: Deterministic SHA-256 chunk generation and token bounds.
-3. **`test_entity_resolver_normalization`**: Legal suffix stripping (*Inc.*, *Corp.*, *LLC*) and acronym preservation (*ASML*).
-4. **`test_extracted_graph_schema_validation`**: Strict Pydantic model validation on extracted graph JSON.
-5. **`test_local_search_empty_query_stream`**: Real-time token streaming generator behavior and safety boundaries.
+3. **`test_entity_resolver_normalization`**: Legal suffix stripping (*Inc.*, *Corp.*, *LLC*) and canonical uppercase acronym preservation (*ASML*, *TSMC*, *IBM*).
+4. **`test_chunker_overlap_guard`**: Safety clamping preventing sliding-window token step underflow to 1.
+5. **`test_extractor_json_repair_trailing_commas`**: LLM JSON repair stripping illegal trailing commas before parsing.
+6. **`test_extracted_graph_schema_validation`**: Strict Pydantic model validation on extracted graph JSON.
+7. **`test_local_search_empty_query_stream`**: Real-time token streaming generator behavior and safety boundaries.
+8. **`test_local_search_with_context`**: Grounded context extraction and tuple contract verification for evaluation.
 
 ---
 
@@ -485,7 +505,7 @@ Tests validate:
 
 ### ADR 02: Louvain Modularity Partitioning vs. Flat Distance Clustering
 * **Context:** Graph data has non-Euclidean topology; geometric distance metrics ($k$-means) fail on sparse corporate relationship networks.
-* **Decision:** Use the Louvain method (`python-louvain`) to maximize network modularity $Q$.
+* **Decision:** Use the Louvain method (`python-louvain`) to maximize network modularity $Q$, with edge weight accumulation for multi-relationship pairs.
 * **Consequence:** Eliminates the need to pre-specify $k$ (number of clusters). Hierarchically groups entities based on real connection density, reflecting authentic organizational silos and market sectors.
 
 ### ADR 03: Neo4j Labeled Property Graph (LPG) vs. RDF Triplestores
@@ -500,8 +520,23 @@ Tests validate:
 
 ### ADR 05: Parallel Map-Reduce & Real-Time Token Streaming
 * **Context:** Global search over community summaries previously executed sequentially, causing high response latencies. Local search required waiting for full responses before rendering.
-* **Decision:** Parallelize the Map phase across community summaries using `concurrent.futures.ThreadPoolExecutor`, and implement generator-based token streaming across both retrieval engines and FastAPI.
-* **Consequence:** Global search latency drops significantly, and perceived response time in the UI drops to near-instantaneous as partial tokens render smoothly in real time.
+* **Decision:** Parallelize the Map phase across community summaries using `concurrent.futures.ThreadPoolExecutor` with thread-safe client instantiation, and implement generator-based token streaming across both retrieval engines and FastAPI.
+* **Consequence:** Global search latency drops significantly, thread socket races are eliminated, and perceived response time in the UI drops to near-instantaneous as partial tokens render smoothly in real time.
+
+### ADR 06: Hybrid Vector & Topological Indexing in Neo4j
+* **Context:** Pure syntactic Cypher search (`CONTAINS`) fails on queries that omit exact entity keywords, while pure vector search cannot traverse cross-document relationship chains.
+* **Decision:** Provision both dense vector indexes (`chunk_vector_idx`) and full-text indexes (`entity_name_desc_idx`) directly in Neo4j 5.20, persisting chunk embeddings and employing multi-hop graph expansions (`*1..2`).
+* **Consequence:** Delivers true hybrid GraphRAG: semantic vector nearest-neighbors anchor the query, followed by exact topological path traversals.
+
+### ADR 07: Decoupled Render State & Lifecycle Stabilization in React 19 / WebGL
+* **Context:** In React 19, re-instantiating array dependencies (`nodes`, `links`) on every state update caused Three.js WebGL canvas teardown and physics simulation restarts on mouse hover and search input.
+* **Decision:** Memoize graph collections via `useMemo` and decouple dynamic hover/filter states into a synchronized `renderStateRef` consumed by the 60fps canvas loop without re-triggering effects.
+* **Consequence:** 0 linter warnings across `oxlint`, butter-smooth 60fps graph rendering, zero WebGL context leaks, and persistent camera positions during user interactions.
+
+### ADR 08: Genuine Subgraph Grounding in Ragas Quantitative Benchmarking
+* **Context:** Setting `context = answer` in evaluation harnesses produces circular self-verification, masking hallucinations and invalidating Faithfulness and Context Precision metrics.
+* **Decision:** Expose [`ask_with_context()`](src/pipeline.py) to provide the true retrieved graph subnetwork and linked text chunks directly to the Ragas LLM judge.
+* **Consequence:** Benchmarks scientifically evaluate actual grounding against source documents, providing reliable anti-hallucination verification.
 
 ---
 

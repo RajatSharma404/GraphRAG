@@ -53,6 +53,8 @@ class GraphExtractor:
         if start != -1 and end != -1 and end > start:
             cleaned = cleaned[start:end + 1]
 
+        # Strip illegal trailing commas before closing braces/brackets
+        cleaned = re.sub(r',\s*([}\]])', r'\1', cleaned)
         return cleaned
 
     def extract_from_chunk(self, chunk: TextChunk) -> ExtractedGraph:
@@ -79,7 +81,16 @@ class GraphExtractor:
                 raw_json = result.get("message", {}).get("content", "")
                 
                 cleaned_json = self._clean_json_string(raw_json)
-                parsed = json.loads(cleaned_json)
+                try:
+                    parsed = json.loads(cleaned_json)
+                except json.JSONDecodeError:
+                    # Secondary repair attempt: strip control characters or unescaped line breaks
+                    try:
+                        repaired = re.sub(r'[\x00-\x1f]+', ' ', cleaned_json)
+                        repaired = re.sub(r',\s*([}\]])', r'\1', repaired)
+                        parsed = json.loads(repaired)
+                    except Exception:
+                        parsed = {}
 
                 # Ensure structure matches expected schema
                 if not isinstance(parsed, dict):

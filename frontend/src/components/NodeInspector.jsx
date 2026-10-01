@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Network, ExternalLink, ArrowRight, ArrowLeft, Tag, Layers, MessageSquare } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, MessageSquare } from 'lucide-react';
 import { getCommunityColor } from '../utils/colors';
 
 export default function NodeInspector({ node, graphData, onClose, onSelectNode, onAskEntity }) {

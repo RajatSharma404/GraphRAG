@@ -3,12 +3,8 @@ import {
   Network, 
   UploadCloud, 
   RefreshCw, 
-  Database, 
   Trash2, 
-  Share2, 
-  Box, 
-  Activity, 
-  Sparkles 
+  Box
 } from 'lucide-react';
 
 export default function Header({
